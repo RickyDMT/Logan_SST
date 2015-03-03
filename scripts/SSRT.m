@@ -8,7 +8,7 @@
 
 clear all;
 % output version
-studyFolder = '/Users/canelab/Downloads/StopSignal';
+[studyFolder,~,~] = fileparts(which('SSRT.m'));
 script_name='Stopfmri: optimized SSD tracker for fMRI';
 script_version='2';
 revision_date='02-24-15'; 
@@ -23,7 +23,8 @@ revision_date='02-24-15';
 % Make sure folder with this script, the ladder files (e.g. st1b1.mat), and
 % soundfile.mat (the beep) are in the path
 
-% Ver2: updated to not need ladder files.
+% Ver2: updated to not need ladder files. 
+% -- Reworked to look like Logan, 1997.
 
 
 notes={'Design developed by Aron, Newman and Poldrack, based on Aron et al. 2003'};
@@ -36,8 +37,17 @@ orange=[255,128,0,255];
     
 % read in subject initials
 fprintf('%s %s (revised %s)\n',script_name,script_version, revision_date);
-subject_code=input('Enter subject number (integer only): ');
-sub_session=input('Is this the subject''s first or second session? (Enter 1 or 2): ');
+
+prompt={'SUBJECT ID' 'Session'};
+defAns={'4444' '1'};
+
+answer=inputdlg(prompt,'Please input subject info',1,defAns);
+
+subject_code=str2double(answer{1});
+sub_session = str2double(answer{2});
+
+% subject_code=input('Enter subject number (integer only): ');
+% sub_session=input('Is this the subject''s first or second session? (Enter 1 or 2): ');
 %scannum_temp=input('Enter scan number: ');
 %scannum_temp=sub_session;
 %scannum=scannum_temp;
@@ -80,7 +90,7 @@ MRI = 0; % Use the above line instead if you'd like to have the option to wait f
 % write trial-by-trial data to a text logfile
 d=clock;
 logfile=sprintf('sub%d_scan%d_stopsig.log',subject_code,sub_session);
-logfile = [studyFolder '/output/' logfile];
+logfile = [studyFolder(1:end-7) 'output' filesep logfile];  %removes "scripts" from directory path, adds "output" to save results there
 fprintf('A log of this session will be saved to %s\n',logfile);
 fid=fopen(logfile,'a');
 if fid<1,
@@ -233,7 +243,7 @@ try  % goes with catch at end of script
     
     %%%%%%%%%%%%%% Stimuli and Response on same matrix, pre-determined
     % The first column is trial number;
-    % The second column is numchunks number (1-NUMCHUNKS);
+    % The second column block number;
     % The third column is 0 = Go, 1 = NoGo; 2 is null, 3 is notrial (kluge, see opt_stop.m)
     % The fourth column is 0=left, 1=right arrow; 2 is null
     % The fifth column is ladder number (1-2);
@@ -255,7 +265,7 @@ try  % goes with catch at end of script
     %  see opt_stop.m in /gng/optmize/stopping/
     % because of interdigitated null and true trial, there will thus be four staircases per 32 trials in trialcode
     
-%     Produce a fucking trial code that makes any goddamned sense
+%     Produce a trial code that makes any goddamned sense
 totes_trials = 512;
 blocks = 4;
 trials = 128;
@@ -270,7 +280,7 @@ trial_gen = [trial_gen [repmat([1;2],fix(trials/8),1); zeros((trials-fix(trials/
 
 for bbb = 1:blocks
     block_start = ((bbb-1)*trials)+1;
-    trial_gen = trial_gen(randperm(length(trial_gen)),:);   %Shuffle the trial generator
+    trial_gen = trial_gen(randperm(length(trial_gen)),:);   %Always shuffling shuffling: Shuffle the trial generator
     
     trialcode(block_start:block_start+trials-1,1) = trial_gen(:,1);   %Is it a go or nogo trial? 0 = Go, 1 = NoGo;
     trialcode(block_start:block_start+trials-1,2) = trial_gen(:,2);
@@ -294,14 +304,15 @@ end
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%% TRIAL PRESENTATION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
-    startstring = sprintf('Get ready for scan number %d!',sub_session);
-    Screen('DrawText',w,startstring,100,100);
-    if MRI==1
-        Screen('DrawText',w,'Waiting for trigger...',xcenter-150,ycenter);
-        Screen('Flip',w);
-    else
-        Screen('DrawText',w,'Press the left button if you see O',100,175);
-        Screen('DrawText',w,'Press the right button if you see X',100,225);
+%     startstring = sprintf('Get ready for scan number %d!',sub_session);
+%     Screen('DrawText',w,startstring,100,100);
+%     if MRI==1
+%         Screen('DrawText',w,'Waiting for trigger...',xcenter-150,ycenter);
+%         Screen('Flip',w);
+%     else
+%NEED TO UPDATE THESE INSTRUCTIONS
+        Screen('DrawText',w,'Press the left button (z) if you see O',100,175);
+        Screen('DrawText',w,'Press the right button (/) if you see X',100,225);
         Screen('DrawText',w,'Press the button as FAST as you can',100,300);
         Screen('DrawText',w,'when you see the arrow.',100,350);
         Screen('DrawText',w,'But if you hear a beep, try very hard',100,425);
@@ -309,7 +320,10 @@ end
         Screen('DrawText',w,'Stopping and Going are equally important.',100,550);
         Screen('DrawText',w,'Press any key to go on.',100,625);
         Screen('Flip',w);
-    end;
+%     sca
+scasca
+sca
+end;
     
     if MRI==1,
         secs=KbTriggerWait(trigger,inputDevice);
@@ -337,9 +351,9 @@ end
     
     for block=1:blocks %2	  %because of way it's designed, there are two blocks for every scan
         
-        for a=1:8 %8     %  now we have 8 chunks of 8 trials (but we use 16 because of the null interspersed trials)
+        for a=1:16 %8     %  now we have 16 chunks of 8 trials (but they used to use 16 because of the null interspersed trials)
             %for a=1:1,  % short for troubleshooting
-            for b=1:16   %  (but we use 16 because of the null interspersed trials)
+            for b=1:8   %  (but they used to use 16 because of the null interspersed trials)
                 
 %                 if FLAG_FASTER==2
 %                     circleColor = red;  %red [255,0,0,255]
@@ -353,28 +367,28 @@ end
 %                 end
                 
                 if Seeker(Pos,3)~=2, %% ie this is not a NULL event
-                    
+                    %This part displays fixation...
                     Screen('TextSize',w,ArrowSize);
                     Screen('TextFont',w,'Courier');
                     DrawFormattedText(w,'+','center','center',[255 255 255]);
 %                     Screen('TextSize',w,ArrowSize);
                     Screen('TextFont',w,'Arial');
+
+%                   %I think this tries to align the timer iwth
+%                   preconceived timings to match fMRI?
+%                     while GetSecs - anchor < Seeker(Pos,16),
+%                     end; %waits to synch beginning of trial with 'true' start
                     
-                    while GetSecs - anchor < Seeker(Pos,16),
-                    end; %waits to synch beginning of trial with 'true' start
-                    
-                    Screen('Flip',w);
-                    trial_start_time = GetSecs;
+                    trial_start_time = Screen('Flip',w);
+%                     trial_start_time = GetSecs;
                     Seeker(Pos,12)=trial_start_time-anchor; %absolute time since beginning of task
                     WaitSecs(OCI);
                 end;
                 
                 if Seeker(Pos,3)~=2 %% ie this is not a NULL event
-%                     Screen('TextSize',w,CircleSize);
-%                     Screen('TextFont',w,'Courier');
-%                     Screen('DrawText',w,'o', CirclePosX, CirclePosY);
-%                     Screen('TextSize',w,ArrowSize);
-%                     Screen('TextFont',w,'Arial');
+
+                    %This part displays Xs or Os
+
                     if Seeker(Pos,4)==0
                         DrawFormattedText(w,'O','center','center',[255 255 255]);
                     else
@@ -382,8 +396,8 @@ end
                     end;
                     noresp=1;
                     notone=1;
-                    Screen('Flip',w);
-                    arrow_start_time = GetSecs;
+                    arrow_start_time = Screen('Flip',w);
+%                     arrow_start_time = GetSecs;
                     
                     
                     while (GetSecs-arrow_start_time < arrow_duration & noresp),
@@ -399,7 +413,7 @@ end
                             if keyIsDown && noresp
                                 try
                                     tmp=KbName(keyCode);
-                                    if length(tmp) > 1 && (tmp(1)=='z' | tmp(1)=='/?')
+                                    if length(tmp) > 1 && (tmp(1)=='z' || tmp(1)=='/?')
                                         Seeker(Pos,7)=KbName(tmp(2));
                                     else
                                         Seeker(Pos,7)=KbName(tmp(1));
@@ -417,7 +431,7 @@ end
                             end;
                         end;
                         WaitSecs(0.001);
-                        if Seeker(Pos,3)==1 & GetSecs - arrow_start_time >=Seeker(Pos,6)/1000 & notone,
+                        if Seeker(Pos,3)==1 && GetSecs - arrow_start_time >=Seeker(Pos,6)/1000 && notone,
                             %% Psychportaudio
                             PsychPortAudio('FillBuffer', pahandle, wave);
                             PsychPortAudio('Start', pahandle, 1, 0, 0);
@@ -434,7 +448,7 @@ end
                                 if keyIsDown & noresp
                                     try
                                         tmp=KbName(keyCode);
-                                        if length(tmp) > 1 & (tmp(1)==',' | tmp(1)=='.'),
+                                        if length(tmp) > 1 && (tmp(1)=='z' || tmp(1)=='/?'),
                                             Seeker(Pos,7)=KbName(tmp(2));
                                         else
                                             Seeker(Pos,7)=KbName(tmp(1));
@@ -457,13 +471,7 @@ end
                             %Seeker(Pos,14)=GetSecs-arrow_start_time;
                             %notone=0;
                         end;
-                        % To try to get stopping sound outside of sound
-                        % loop so can collect responses as well; if do
-                        % this, it doesn't play
-                        %                         if GetSecs-Seeker(Pos,14)>=1,
-                        %                             % Stop playback:
-                        %                             PsychPortAudio('Stop', pahandle);
-                        %                         end;
+
                     end; %end while
                     PsychPortAudio('Stop', pahandle); % If do this,
                     % response doesn't end loop
@@ -485,7 +493,7 @@ end
                 end;
                 
                 if colorFlags==1
-                    trialRT=Seeker(Pos,9)
+                    trialRT=Seeker(Pos,9);
                     if Seeker(Pos,3)~=2
                         if trialRT > highThresh
                             FLAG_FASTER = 2;
@@ -499,6 +507,7 @@ end
                 
                 
                 Pos=Pos+1;
+                FlushEvents();
                 
             end; % end of trial loop
             
@@ -626,7 +635,7 @@ end;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% SAVE DATA %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 d=clock;
 outfile=sprintf('%dstop_fmri%d_%s_%02.0f-%02.0f.mat',subject_code,sub_session,date,d(4),d(5));
-outfile = [studyFolder 'output/' outfile];
+outfile = [studyFolder(1:end-7) 'output' filesep outfile];
 Snd('Close');
 
 params = cell (7,2);
@@ -670,11 +679,11 @@ end;
 %     WaitSecs(0.5);
 % end;
 
-WaitSecs(5);
+% cWaitSecs(5);
 
 Screen('TextSize',w,36);
 Screen('TextFont',w,'Ariel');
-Screen('DrawText',w,'That concludes this task. The assessor will be with you shortly.\n\nThank you!',xcenter-200,ycenter);
+DrawFormattedText(w,'That concludes this task. The assessor will be with you shortly.\n\nThank you!','center','center',[250 250 250],80);
 Screen('Flip',w);
 
 % if MRI==1,
@@ -691,7 +700,7 @@ Screen('Flip',w);
 %     WaitSecs(0.5);
 % end;
 
-WaitSecs(1);
+WaitSecs(5);
 Screen('Flip',w);
 Screen('CloseAll');
 ShowCursor;
