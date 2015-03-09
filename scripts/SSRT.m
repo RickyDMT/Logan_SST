@@ -6,6 +6,8 @@
 %%% Modified for use with new BMC trigger-same device as button box by JC 1/07
 %%% Sound updated and modified for Jess' dissertation by JC 10/08
 
+commandwindow;
+
 clear all;
 % output version
 [studyFolder,~,~] = fileparts(which('SSRT.m'));
@@ -144,6 +146,7 @@ try  % goes with catch at end of script
     
     % set up screens
         % set up screens
+        Screen('Preference', 'SkipSyncTests', 1);
     fprintf('setting up screen\n');
     screens=Screen('Screens');
     screenNumber= max(Screen('Screens'));
@@ -311,19 +314,36 @@ end
 %         Screen('Flip',w);
 %     else
 %NEED TO UPDATE THESE INSTRUCTIONS
-        Screen('DrawText',w,'Press the left button (z) if you see O',100,175);
-        Screen('DrawText',w,'Press the right button (/) if you see X',100,225);
-        Screen('DrawText',w,'Press the button as FAST as you can',100,300);
-        Screen('DrawText',w,'when you see the arrow.',100,350);
-        Screen('DrawText',w,'But if you hear a beep, try very hard',100,425);
-        Screen('DrawText',w,'to STOP yourself from pressing the button.',100,475);
-        Screen('DrawText',w,'Stopping and Going are equally important.',100,550);
-        Screen('DrawText',w,'Press any key to go on.',100,625);
+        DrawFormattedText(w,'In this task, you will see the letter "X" or "O."\nPress "/" when you see an X and "z" when you see an O.\n\n Be as quick as you can without making errors.\n\nPress any key to continue.','center','center',white,70,[],[],1.5);
+        Screen('Flip',w);
+        KbWait([],2);
+        
+        DrawFormattedText(w,'Occasionally, the X or O will be followed by a beep. Do not respond on that trial if you hear a beep. Inhibit your response but don''t worry if you are unable to inhibit your response.\n\nThe beeps will occur at different times, so sometimes you will be able to stop and sometimes you will not be able to.\n\n Press any key to continue','center','center',white,70,[],[],1.5);
+        Screen('Flip',w);
+        KbWait([],2);
+        
+        DrawFormattedText(w,'Stopping and going are equally important. Do not let the "stop task" (the beeps) interfere with the "go task" (the letters).\n\n Press any key to continue.','center','center',white,70,[],[],1.5);
+        Screen('Flip',w);
+        KbWait([],2);
+        
+        DrawFormattedText(w,'If you have any questions, please ask the assessor now!','center','center',white,60,[],[],1.5);
+        Screen('Flip',w);
+        WaitSecs(5);
+        
+        DrawFormattedText(w,'Press any key when you are ready to begin the task.','center','center',white,60,[],[],1.5);
+        Screen('Flip',w);
+        KbWait([],2);
+%         Screen('DrawText',w,'Press the left button (z) if you see O',100,175);
+%         Screen('DrawText',w,'Press the right button (/) if you see X',100,225);
+%         Screen('DrawText',w,'Press the button as FAST as you can',100,300);
+%         Screen('DrawText',w,'when you see the arrow.',100,350);
+%         Screen('DrawText',w,'But if you hear a beep, try very hard',100,425);
+%         Screen('DrawText',w,'to STOP yourself from pressing the button.',100,475);
+%         Screen('DrawText',w,'Stopping and Going are equally important.',100,550);
+%         Screen('DrawText',w,'Press any key to go on.',100,625);
         Screen('Flip',w);
 %     sca
-scasca
-sca
-end;
+%  end;
     
     if MRI==1,
         secs=KbTriggerWait(trigger,inputDevice);
@@ -413,11 +433,21 @@ end;
                             if keyIsDown && noresp
                                 try
                                     tmp=KbName(keyCode);
-                                    if length(tmp) > 1 && (tmp(1)=='z' || tmp(1)=='/?')
-                                        Seeker(Pos,7)=KbName(tmp(2));
+                                    if iscell(tmp) %&& any(KbName(tmp) == KbName('z')) || any(KbName(tmp) == KbName('/?'))
+                                        %Looks like multiple buttons were
+                                        %smashed...just choose one or 999?
+                                        if any(KbName(tmp) == KbName('z'))
+                                            Seeker(Pos,7) = KbName('z');
+                                        elseif any(KbName(tmp) == KbName('/?'))
+                                            Seeker(Pos,7) = KbName('/?');
+                                        end
+%                                     if length(tmp) > 1 && (tmp(1)=='z' || tmp(1)=='/?')
+%                                         Seeker(Pos,7)=KbName(tmp(2));
+                                    elseif ~iscell(tmp)
+                                        Seeker(Pos,7)=KbName(tmp);
                                     else
-                                        Seeker(Pos,7)=KbName(tmp(1));
-                                    end;
+                                        Seeker(Pos,7)=9999;
+                                    end
                                 catch
                                     Seeker(Pos,7)=9999;
                                 end;
@@ -513,7 +543,7 @@ end;
             
             % after each 8 trials, this code does the updating of staircases
             %These three loops update each of the ladders
-            for c=(Pos-16):Pos-1,
+            for c=(Pos-8):Pos-1,
                 %This runs from one to two, one for each of the ladders
                 for d=1:2,
                     if (Seeker(c,7)~=0&Seeker(c,5)==d),	%col 7 is sub response
@@ -583,7 +613,7 @@ end;
 catch    % (goes with try, line 61)
     rethrow(lasterror);
     
-    Screen('CloseAll');
+    sca
     ShowCursor;
     
 end;

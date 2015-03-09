@@ -1,0 +1,16 @@
+Logan Stop Signal Task
+Procedure
+500 ms Fixation
+1000 ms blank screen
+X & Os presented on screen for 1000 ms.
+Tone = 100-ms, 1000-Hz tone
+Stop-signal delay set at 250 ms initial and adjusted dynamically
+Increase delay by 50 ms if successful inhibition
+Decreased delay by 50 ms if failed inhibit
+
+128-trials x 4 Blocks = 512 total trials (rest in between)
+Stop Signal presented in each trial 
+Present 1 trial every 2.5 s
+
+X = Right press
+O = Left press
